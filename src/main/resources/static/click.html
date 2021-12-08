@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>vaptcha</title>
+    <style>
+        .vaptcha-init-main {
+            display: table;
+            width: 100%;
+            height: 100%;
+            background-color: #eeeeee;
+        }
+
+        .vaptcha-init-loading {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .vaptcha-init-loading > a {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: none;
+        }
+
+        .vaptcha-init-loading .vaptcha-text {
+            font-family: sans-serif;
+            font-size: 12px;
+            color: #cccccc;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+<div><i class="fa fa-user"></i><input id="username" type="text" class="form-control" placeholder="please enter username: root"
+                                      value="root"/></div>
+<div><i class="fa fa-key"></i><input id="password" type="password" class="form-control" placeholder="please enter password: root"
+                                     value="root"/></div>
+<!--  The recommended height of the button is between 36px and 46px  -->
+<div id="vaptchaContainer" style="width: 300px;height: 36px;">
+    <!--vaptcha-container is the container for load VAPTCHA，The following code is a preloaded animation for reference only -->
+    <div class="vaptcha-init-main">
+        <div class="vaptcha-init-loading">
+            <a href="/" target="_blank">
+                <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink"
+                        width="48px"
+                        height="60px"
+                        viewBox="0 0 24 30"
+                        style="enable-background: new 0 0 50 50; width: 14px; height: 14px; vertical-align: middle"
+                        xml:space="preserve"
+                >
+                   <rect x="0" y="9.22656" width="4" height="12.5469" fill="#CCCCCC">
+                       <animate attributeName="height" attributeType="XML" values="5;21;5" begin="0s" dur="0.6s"
+                                repeatCount="indefinite"></animate>
+                       <animate attributeName="y" attributeType="XML" values="13; 5; 13" begin="0s" dur="0.6s"
+                                repeatCount="indefinite"></animate>
+                   </rect>
+                    <rect x="10" y="5.22656" width="4" height="20.5469" fill="#CCCCCC">
+                       <animate attributeName="height" attributeType="XML" values="5;21;5" begin="0.15s" dur="0.6s"
+                                repeatCount="indefinite"></animate>
+                        <animate attributeName="y" attributeType="XML" values="13; 5; 13" begin="0.15s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                   </rect>
+                    <rect x="20" y="8.77344" width="4" height="13.4531" fill="#CCCCCC">
+                       <animate attributeName="height" attributeType="XML" values="5;21;5" begin="0.3s" dur="0.6s"
+                                repeatCount="indefinite"></animate>
+                        <animate attributeName="y" attributeType="XML" values="13; 5; 13" begin="0.3s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                   </rect>
+               </svg>
+            </a>
+            <span class="vaptcha-text">Vaptcha Initializing...</span>
+        </div>
+    </div>
+</div>
+<!--
+ Please select the nearest resource  or download v3.js to the local for use
+
+North America:  https://v-na.vaptcha.com/v3.js
+Southeast Asia:  https://v-sea.vaptcha.com/v3.js
+China:  https://v-cn.vaptcha.com/v3.js
+-->
+<script src="https://v-cn.vaptcha.com/v3.js"></script>
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+<script>
+    vaptcha({
+        // required general
+        vid: '5f2cd29bb35472b0acab1b52',
+        mode: 'click',
+        scene: 1,
+        // click、embed mode required
+        container: '#vaptchaContainer',
+        // optional general
+        area: 'auto', // VAPTCHA node area. The default value is cn. The optional values are auto,sea,na,cn.
+        lang: 'zh-CN', // Language, The default value is zh-CN. The optional values are zh-CN,en,zh-TW,jp.
+        //  optional click mode only
+        style: 'dark', // Button style,The optional values are dark,light.
+        color: '#57ABFF' // Button color,The default value is #57ABFF.
+    }).then(function (vaptchaObj) {
+        obj = vaptchaObj;
+        vaptchaObj.render();
+        console.log("render emit");
+
+        // listen pass event,it's emit when VAPTCHA fronted verify pass.
+        // we can call login when it's emit.
+        vaptchaObj.listen('pass', function () {
+
+            ts = vaptchaObj.getServerToken()
+            console.log("ts: ", ts);
+
+            const data = {
+                token: ts.token,
+                server: ts.server,
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value
+            };
+            console.log("token: " + data.token);
+            $.ajax({
+                type: 'POST',
+                url: "http://localhost:8080/login",
+                xhrFields: {
+                    withCredentials: true
+                },
+                data: JSON.stringify(data),
+                success: function (r) {
+                    if (r.code !== 200) {
+                        alert("login fail");
+                        vaptchaObj.reset();  // reset VAPTCHA when login fail,let user tray again.
+                    } else {
+                        alert("login success");
+                    }
+                },
+                contentType: "application/json;charset=UTF-8"
+            });
+        });
+
+        // listen close event,it's emit when verify page closed.
+        vaptchaObj.listen('close', function () {
+
+        })
+    })
+</script>
+</body>
+</html>

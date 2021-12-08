@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>vaptcha</title>
+</head>
+<body>
+
+<div><i class="fa fa-user"></i><input id="username" type="text" class="form-control" placeholder="please enter username: root"
+                                      value="root"/></div>
+<div><i class="fa fa-key"></i><input id="password" type="password" class="form-control" placeholder="please enter password: root"
+                                     value="root"/></div>
+<button id="login-button">login</button>
+
+<!--
+ Please select the nearest resource  or download v3.js to the local for use
+
+North America:  https://v-na.vaptcha.com/v3.js
+Southeast Asia:  https://v-sea.vaptcha.com/v3.js
+China:  https://v-cn.vaptcha.com/v3.js
+-->
+<script src="https://v-cn.vaptcha.com/v3.js"></script>
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+
+<script>
+    vaptcha({
+        // required general
+        vid: '5f2cd29bb35472b0acab1b52',
+        mode: 'invisible',
+        scene: 1,
+        // optional general
+        area: 'auto', // VAPTCHA node area. The default value is cn. The optional values are auto,sea,na,cn.
+        lang: 'zh-CN', // Language, The default value is zh-CN. The optional values are zh-CN,en,zh-TW,jp.
+    }).then(function (vaptchaObj) {
+        obj = vaptchaObj;
+        // NOTE: in invisible mode we need not call render func.
+
+        // listen pass event,it's emit when VAPTCHA fronted verify pass.
+        // we can call login when it's emit.
+        vaptchaObj.listen('pass', function () {
+            ts = vaptchaObj.getServerToken()
+            const data = {
+                token: ts.token,
+                server: ts.server,
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value
+            };
+
+            $.ajax({
+                type: 'POST',
+                url: "http://localhost:8080/login",
+                xhrFields: {
+                    withCredentials: true
+                },
+                data: JSON.stringify(data),
+                success: function (r) {
+                    if (r.code !== 200) {
+                        alert("login fail");
+                        vaptchaObj.reset(); // reset VAPTCHA when login fail,let user tray again.
+                    } else {
+                        alert("login success");
+                    }
+                },
+                contentType: "application/json;charset=UTF-8"
+            });
+        });
+
+        // listen close event,it's emit when verify page closed.
+        vaptchaObj.listen('close', function () {
+        })
+    });
+
+    // in invisible mode,we need render VAPTCHA by validate func.
+    // we can call it when user submit form,or click login button.
+    $('#login-button').on('click', function () {
+        obj.validate();
+    })
+</script>
+</body>
+</html>
